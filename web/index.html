@@ -1,0 +1,119 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="/web/css/spectre.min.css" />
+        <link rel="stylesheet" href="/web/css/spectre-exp.min.css" />
+        <link rel="stylesheet" href="/web/css/spectre-icons.min.css" />
+    </head>
+    <body>
+        <div id="app">
+            <div class="grid-960 container">
+                <div style="display:none;" v-show="isLoaded">
+                    <h1>Test cipher</h1>
+                    <form class="form-horizontal" v-on:submit.prevent>
+                        <hr/>
+                        <h2>Test GenerateDeterministicKeyPair</h2>
+                        <div class="column">
+                            <div class="col-xs-3">
+                                <label class="form-label">Seed for <a href="https://github.com/skycoin/skycoin/blob/develop/src/cipher/crypto.go#L341">GenerateDeterministicKeyPair</a></label>
+                            </div>
+                            <div class="col-xs-9">                            
+                                <div class="input-group">
+                                    <span class="input-group-addon addon-sm">Seed</span>
+                                    <input type="text" class="form-input input-sm" placeholder="[1,2]" v-model="seedJson">
+                                    <button class="btn btn-primary input-group-btn btn-sm" v-on:click="generateSeed">Generate</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column col-xs-12">
+                            <button class="btn btn-primary input-group-btn btn-sm" v-on:click="generateDeterministicKeyPair">GenerateDeterministicKeyPair</button>
+                        </div>
+                        <div class="column col-xs-12" v-show="generateDeterministicKeyPairPerformance">
+                            <div class="toast toast-success" >
+                                <button class="btn btn-clear float-right" v-on:click="generateDeterministicKeyPairPerformance=''"></button>
+                                {{generateDeterministicKeyPairPerformance}}
+                            </div>
+                        </div>
+                        <div class="column col-xs-12" v-show="generateDeterministicKeyPairError">
+                            <div class="toast toast-error" >
+                                <button class="btn btn-clear float-right" v-on:click="generateDeterministicKeyPairError=''"></button>
+                                {{generateDeterministicKeyPairError}}
+                            </div>
+                        </div>                        
+                        <div class="column col-xs-12">                            
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label">Public Key</label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text"  placeholder="Public Key" v-model="publicKey">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label">Secret Key</label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text" placeholder="Secret Key" v-model="privateKey">
+                            </div>
+                        </div>                        
+                        </div>
+                        <hr/>
+                        <h2>Test ECDH</h2>
+                    <!-- form structure -->
+                    </form>                    
+                </div>
+                <div v-show="!isLoaded">
+                    <h1>Loading ...</h1>
+                </div>
+            </div>
+        </div>
+        
+        <script src="http://wzrd.in/standalone/typedarray@latest"></script>
+        <script src="https://unpkg.com/vue"></script>
+        <script src="/gopherjs/main.js"></script>
+
+        <script>
+            function getRandomInt255() {
+                min = 0;
+                max = 255;
+                return Math.floor(Math.random() * (max - min + 1)) + min; //The maximum is inclusive and the minimum is inclusive 
+            }
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    message: 'Hello Vue!',
+                    seedJson: "[1,2,3,4,5,6,7]",
+                    publicKey: "",
+                    privateKey: "",
+                    generateDeterministicKeyPairPerformance: "",
+                    generateDeterministicKeyPairError: "",
+                    isLoaded: true
+                },
+                methods: {
+                    generateSeed: function() {
+                        var seed = new Uint8Array(32);
+                        seed = seed.map(getRandomInt255);
+                        this.seedJson = '[' + seed.toString() + ']'; 
+                    },
+                    generateDeterministicKeyPair: function() {
+                        try {
+                            // craete a list of keys (table)
+                            this.generateDeterministicKeyPairError = "";
+                            this.generateDeterministicKeyPairPerformance = "";
+                            var seed = new Uint8Array(JSON.parse(this.seedJson));
+                            var t0 = performance.now();
+                            var res = Cipher.GenerateDeterministicKeyPair(seed);
+                            var t1 = performance.now();
+                            this.publicKey = '[' + res[0].toString() + ']';  
+                            this.privateKey = '[' + res[1].toString() + ']';  
+                            this.generateDeterministicKeyPairPerformance = "Call to GenerateDeterministicKeyPair took " + (t1 - t0).toFixed(2) + " milliseconds.";
+                        } catch(e) {
+                            this.generateDeterministicKeyPairError = e.toString()
+                        }
+                    }
+                }
+            })
+        </script>
+    </body>
+</html>
