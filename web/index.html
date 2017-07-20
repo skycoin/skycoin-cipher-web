@@ -1,8 +1,8 @@
 <html>
     <head>
-        <link rel="stylesheet" href="/web/css/spectre.min.css" />
-        <link rel="stylesheet" href="/web/css/spectre-exp.min.css" />
-        <link rel="stylesheet" href="/web/css/spectre-icons.min.css" />
+        <link rel="stylesheet" href="/css/spectre.min.css" />
+        <link rel="stylesheet" href="/css/spectre-exp.min.css" />
+        <link rel="stylesheet" href="/css/spectre-icons.min.css" />
     </head>
     <body>
         <div id="app">
@@ -19,13 +19,14 @@
                             <div class="col-xs-9">                            
                                 <div class="input-group">
                                     <span class="input-group-addon addon-sm">Seed</span>
-                                    <input type="text" class="form-input input-sm" placeholder="[1,2]" v-model="seedJson">
+                                    <input type="text" class="form-input input-sm" placeholder="[1,2]" v-model="seed">
                                     <button class="btn btn-primary input-group-btn btn-sm" v-on:click="generateSeed">Generate</button>
                                 </div>
                             </div>
                         </div>
                         <div class="column col-xs-12">
                             <button class="btn btn-primary input-group-btn btn-sm" v-on:click="generateDeterministicKeyPair">GenerateDeterministicKeyPair</button>
+                            <button class="btn btn-warning input-group-btn btn-sm" v-on:click="checkGenerateDeterministicKeyPair">Check GenerateDeterministicKeyPair</button>
                         </div>
                         <div class="column col-xs-12" v-show="generateDeterministicKeyPairPerformance">
                             <div class="toast toast-success" >
@@ -59,6 +60,81 @@
                         </div>
                         <hr/>
                         <h2>Test ECDH</h2>
+                        <div class="column col-xs-12"> 
+
+                        <label class="form-label">Parameters for <a href="https://github.com/skycoin/skycoin/blob/develop/src/cipher/crypto.go#L186"> ECDH</a></label>
+                        <p>
+                            ECDH generates a shared secret A: pub1,sec1 B: pub2,sec2 person A sends their public key pub1 person B sends an emphameral pubkey pub2 person A computes cipher.ECDH(pub2, sec1) person B computes cipher.ECDH(pub1, sec2) cipher.ECDH(pub2, sec1) equals cipher.ECDH(pub1, sec2) This is their shared secret
+                        </p>
+
+                        <div class="column col-xs-12" v-show="ECDHPerformance">
+                            <div class="toast toast-success" >
+                                <button class="btn btn-clear float-right" v-on:click="ECDHPerformance=''"></button>
+                                {{ECDHPerformance}}
+                            </div>
+                        </div>
+                        <div class="column col-xs-12" v-show="ECDHError">
+                            <div class="toast toast-error" >
+                                <button class="btn btn-clear float-right" v-on:click="ECDHError=''"></button>
+                                {{ECDHError}}
+                            </div>
+                        </div> 
+
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label"><strong>Person A</strong> Public Key</label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text"  placeholder="Person A Public Key" v-model="personAPublicKey">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label"><strong>Person A</strong> Secret Key</label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text" placeholder="Person A Secret Key" v-model="personAPrivateKey">
+                            </div>
+                        </div>    
+                        
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label"><strong>Person B</strong> Public Key</label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text"  placeholder="Person B Public Key" v-model="personBPublicKey">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label"><strong>Person B</strong> Secret Key</label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text" placeholder="Person B Secret Key" v-model="personBPrivateKey">
+                            </div>
+                        </div>          
+                        
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label"><strong>Person A</strong> ECDH</label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text"  placeholder="Person A ECDH" v-model="personAECDH">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label"><strong>Person B</strong> ECDH</label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text" placeholder="Person B ECDH" v-model="personBECDH">
+                            </div>
+                        </div> 
+                        <div class="column col-xs-12">
+                            <button class="btn btn-primary input-group-btn btn-sm" v-on:click="ECDH">ECDH</button>
+                        </div>
+
+                        </div>                        
                     <!-- form structure -->
                     </form>                    
                 </div>
@@ -70,9 +146,16 @@
         
         <script src="http://wzrd.in/standalone/typedarray@latest"></script>
         <script src="https://unpkg.com/vue"></script>
-        <script src="/gopherjs/main.js"></script>
+        <script src="/main.js"></script>
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
         <script>
+            ToBase64 = function (u8) {
+                return btoa(String.fromCharCode.apply(null, u8));
+            }
+            FromBase64 = function (str) {
+                return atob(str).split('').map(function (c) { return c.charCodeAt(0); });
+            }
             function getRandomInt255() {
                 min = 0;
                 max = 255;
@@ -83,33 +166,81 @@
                 el: '#app',
                 data: {
                     message: 'Hello Vue!',
-                    seedJson: "[1,2,3,4,5,6,7]",
+                    seed: "A1BvYKnDnaUBW0gps7XI9HPWWGgUvXLvyRpnIOWlnPtp",
                     publicKey: "",
                     privateKey: "",
                     generateDeterministicKeyPairPerformance: "",
                     generateDeterministicKeyPairError: "",
-                    isLoaded: true
+                    isLoaded: true,
+                    personAPublicKey: "A9rTePRfYAnIPkYl7Mbhbnaq6SruFh63QZdyQHppJlYt",
+                    personAPrivateKey: "VKJktzeRSTjIDk7IMqylkUWgi5tpo3YuT/uNUdGq5pY=",
+                    personBPublicKey: "A3dlngD/Tj/CetziwjmmG18UiS26Pi1KQZKhvr79hm5a",
+                    personBPrivateKey: "3h875e3zrQ2pUVQyu5EdOqwjjajEY93CR+oRHHEAZM8=",
+                    personAECDH: "",
+                    personBECDH: "",
+                    ECDHPerformance: "",
+                    ECDHError: "",                    
                 },
                 methods: {
                     generateSeed: function() {
                         var seed = new Uint8Array(32);
                         seed = seed.map(getRandomInt255);
-                        this.seedJson = '[' + seed.toString() + ']'; 
+                        this.seed = ToBase64(seed); 
                     },
+                    checkGenerateDeterministicKeyPair: function() {
+                        var self = this;
+                        this.generateDeterministicKeyPairError = "";
+                        this.generateDeterministicKeyPairPerformance = "";
+                        axios.post('/GenerateDeterministicKeyPair', {
+                            seed: this.seed
+                        })
+                        .then(function (response) {
+                            console.log(response);
+                            if (response.data.pub == self.publicKey && response.data.sec == self.privateKey) {
+                                self.generateDeterministicKeyPairPerformance = "Keys are identical.";
+                            } else {
+                                self.generateDeterministicKeyPairError = "Keys aren't identical.";
+                            }                            
+                        })
+                        .catch(function (error) {
+                            self.generateDeterministicKeyPairError = error.toString();
+                        });
+                    },                    
                     generateDeterministicKeyPair: function() {
                         try {
-                            // craete a list of keys (table)
                             this.generateDeterministicKeyPairError = "";
                             this.generateDeterministicKeyPairPerformance = "";
-                            var seed = new Uint8Array(JSON.parse(this.seedJson));
+                            var seed = FromBase64(this.seed);
                             var t0 = performance.now();
                             var res = Cipher.GenerateDeterministicKeyPair(seed);
                             var t1 = performance.now();
-                            this.publicKey = '[' + res[0].toString() + ']';  
-                            this.privateKey = '[' + res[1].toString() + ']';  
+                            this.publicKey = ToBase64(res[0]);
+                            this.privateKey = ToBase64(res[1]);  
                             this.generateDeterministicKeyPairPerformance = "Call to GenerateDeterministicKeyPair took " + (t1 - t0).toFixed(2) + " milliseconds.";
+                            //this.generateDeterministicKeyPairPerformance += Cipher.BitcoinAddressFromPubkey(res[0]);
+                            //this.generateDeterministicKeyPairPerformance += " ; " + JSON.stringify(Cipher.AddressFromSecKey(res[1]));
                         } catch(e) {
                             this.generateDeterministicKeyPairError = e.toString()
+                        }
+                    },
+                    ECDH: function() {
+                        try {
+                            this.ECDHError = "";
+                            this.ECDHPerformance = "";
+                            var pubA = FromBase64(this.personAPublicKey);
+                            var secA = FromBase64(this.personAPrivateKey);
+                            var pubB = FromBase64(this.personBPublicKey);
+                            var secB = FromBase64(this.personBPrivateKey);
+                            
+                            var t0 = performance.now();                            
+                            var res1 = Cipher.ECDH(pubB, secA);
+                            var res2 = Cipher.ECDH(pubA, secB);
+                            var t1 = performance.now();
+                            this.personAECDH = ToBase64(res1);  
+                            this.personBECDH = ToBase64(res2);  
+                            this.ECDHPerformance = "Call to ECDH took " + ((t1 - t0)/2).toFixed(2) + " milliseconds.";
+                        } catch(e) {
+                            this.ECDHError = e.toString()
                         }
                     }
                 }

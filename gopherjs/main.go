@@ -5,26 +5,11 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-type Cipher struct {
-}
-
-func GenerateDeterministicKeyPair(seed []byte) (cipher.PubKey, cipher.SecKey) {
-	return cipher.GenerateDeterministicKeyPair(seed)
-}
-
-func NewCipher() *js.Object {
-	return js.MakeWrapper(&Cipher{})
-}
-
 func main() {
 	js.Global.Set("Cipher", map[string]interface{}{
-		"GenerateDeterministicKeyPair": GenerateDeterministicKeyPair,
+		"GenerateDeterministicKeyPair": cipher.GenerateDeterministicKeyPair,
+		"ECDH": cipher.ECDH,
+		"BitcoinAddressFromPubkey": cipher.BitcoinAddressFromPubkey,
+		"AddressFromSecKey":        cipher.AddressFromSecKey,
 	})
-	/*
-		p, s := GenerateDeterministicKeyPair()
-		js.Global.Set("public_key", p)
-		js.Global.Set("private_key", s)
-		ecdh := cipher.ECDH(p, s)
-
-	*/
 }
