@@ -30,6 +30,8 @@ func main() {
 	//m.Get("/ECDH", getECDH)
 	m.Get("/GenerateDeterministicKeyPair", GenerateDeterministicKeyPair)
 	m.Post("/GenerateDeterministicKeyPair", binding.Json(CipherData{}), PostGenerateDeterministicKeyPair)
+	m.Post("/ECDH", binding.Json(CipherData{}), PostECDH)
+	m.Post("/BitcoinAddressFromPubkey", binding.Json(CipherData{}), BitcoinAddressFromPubkey)
 
 	m.Use(macaron.Static("web"))
 	m.Use(macaron.Static("gopherjs"))
@@ -45,8 +47,6 @@ func PostGenerateDeterministicKeyPair(ctx *macaron.Context, data CipherData) {
 	ctx.JSON(http.StatusOK, data)
 }
 
-// m.Post("/login", binding.Json(User{}), userLogin)
-
 func GenerateDeterministicKeyPair(ctx *macaron.Context) {
 	res := CipherData{}
 	res.Seed = make([]byte, 23)
@@ -57,27 +57,24 @@ func GenerateDeterministicKeyPair(ctx *macaron.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-/*
 func PostECDH(ctx *macaron.Context, data CipherData) {
-	c := db.C(ExpenseCollectionName)
-	id := bson.ObjectIdHex(ctx.Params("id"))
-
-	filter := bson.M{"_id": id}
-	if ok, _ := inArray("admin", user.Roles); !ok {
-		filter["owner"] = user.ID
+	p := cipher.PubKey{}
+	s := cipher.SecKey{}
+	for i, v := range data.PubKey {
+		p[i] = v
 	}
-	var exp Expense
-	err := c.Find(filter).One(&exp)
-	if err != nil {
-		sendError(ctx, http.StatusNotFound, err)
-		return
+	for i, v := range data.SecKey {
+		s[i] = v
 	}
-
-	err = c.Remove(filter)
-	if err != nil {
-		sendError(ctx, http.StatusInternalServerError, err)
-	} else {
-		ctx.JSON(http.StatusOK, exp)
-	}
+	data.SharedSecret = cipher.ECDH(p, s)
+	ctx.JSON(http.StatusOK, data)
 }
-*/
+
+func BitcoinAddressFromPubkey(ctx *macaron.Context, data CipherData) {
+	p := cipher.PubKey{}
+	for i, v := range data.PubKey {
+		p[i] = v
+	}
+	data.Address = cipher.BitcoinAddressFromPubkey(p)
+	ctx.JSON(http.StatusOK, data)
+}

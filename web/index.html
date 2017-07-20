@@ -18,15 +18,15 @@
                             </div>
                             <div class="col-xs-9">                            
                                 <div class="input-group">
-                                    <span class="input-group-addon addon-sm">Seed</span>
-                                    <input type="text" class="form-input input-sm" placeholder="[1,2]" v-model="seed">
-                                    <button class="btn btn-primary input-group-btn btn-sm" v-on:click="generateSeed">Generate</button>
+                                    <span class="input-group-addon addon">Seed</span>
+                                    <input type="text" class="form-input input" placeholder="base64" v-model="seed">
+                                    <button class="btn btn-primary input-group-btn btn" v-on:click="generateSeed">Generate</button>
                                 </div>
                             </div>
                         </div>
                         <div class="column col-xs-12">
-                            <button class="btn btn-primary input-group-btn btn-sm" v-on:click="generateDeterministicKeyPair">GenerateDeterministicKeyPair</button>
-                            <button class="btn btn-warning input-group-btn btn-sm" v-on:click="checkGenerateDeterministicKeyPair">Check GenerateDeterministicKeyPair</button>
+                            <button class="btn btn-primary input-group-btn" v-on:click="generateDeterministicKeyPair">GenerateDeterministicKeyPair</button>
+                            <button class="btn btn-warning input-group-btn" v-on:click="checkGenerateDeterministicKeyPair">Check GenerateDeterministicKeyPair on Go back-end</button>
                         </div>
                         <div class="column col-xs-12" v-show="generateDeterministicKeyPairPerformance">
                             <div class="toast toast-success" >
@@ -131,10 +131,50 @@
                             </div>
                         </div> 
                         <div class="column col-xs-12">
-                            <button class="btn btn-primary input-group-btn btn-sm" v-on:click="ECDH">ECDH</button>
+                            <button class="btn btn-primary input-group-btn" v-on:click="ECDH">ECDH</button>
+                            <button class="btn btn-warning input-group-btn" v-on:click="checkECDH">Check ECDH on Go back-end</button>
                         </div>
 
-                        </div>                        
+                        </div>    
+                    
+                        <hr/>
+                        <h2>Test BitcoinAddressFromPubkey</h2>
+                        
+                        <div class="column">
+                            <div class="col-xs-3">
+                                <label class="form-label">Parameters for <a href="https://github.com/skycoin/skycoin/blob/develop/src/cipher/address.go#L189">BitcoinAddressFromPubkey</a></label>
+                            </div>
+                            <div class="col-xs-9">                            
+                                <div class="input-group">
+                                    <span class="input-group-addon addon">PubKey</span>
+                                    <input type="text" class="form-input input" placeholder="base64" v-model="PubKey4BitcoinAddress">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column col-xs-12">
+                            <button class="btn btn-primary input-group-btn" v-on:click="bitcoinAddressFromPubkey">BitcoinAddressFromPubkey</button>
+                            <button class="btn btn-warning input-group-btn" v-on:click="checkBitcoinAddressFromPubkey">Check BitcoinAddressFromPubkey on Go back-end</button>
+                        </div>
+                        <div class="column col-xs-12" v-show="BitcoinAddressFromPubkeyPerformance">
+                            <div class="toast toast-success" >
+                                <button class="btn btn-clear float-right" v-on:click="BitcoinAddressFromPubkeyPerformance=''"></button>
+                                {{BitcoinAddressFromPubkeyPerformance}}
+                            </div>
+                        </div>
+                        <div class="column col-xs-12" v-show="BitcoinAddressFromPubkeyError">
+                            <div class="toast toast-error" >
+                                <button class="btn btn-clear float-right" v-on:click="BitcoinAddressFromPubkeyError=''"></button>
+                                {{BitcoinAddressFromPubkeyError}}
+                            </div>
+                        </div>  
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label"><strong>Bitcoin Address</strong></label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text" placeholder="Bitcoin Address" v-model="bitcoinAddress">
+                            </div>
+                        </div>                                               
                     <!-- form structure -->
                     </form>                    
                 </div>
@@ -179,7 +219,11 @@
                     personAECDH: "",
                     personBECDH: "",
                     ECDHPerformance: "",
-                    ECDHError: "",                    
+                    ECDHError: "",
+                    PubKey4BitcoinAddress: "A4C1/B/RZcL3ADO2VeiO7LL3JNQwo4Z5FI7E7DcmKIaP",
+                    bitcoinAddress: "",
+                    BitcoinAddressFromPubkeyError: "",
+                    BitcoinAddressFromPubkeyPerformance: ""
                 },
                 methods: {
                     generateSeed: function() {
@@ -217,11 +261,30 @@
                             this.publicKey = ToBase64(res[0]);
                             this.privateKey = ToBase64(res[1]);  
                             this.generateDeterministicKeyPairPerformance = "Call to GenerateDeterministicKeyPair took " + (t1 - t0).toFixed(2) + " milliseconds.";
-                            //this.generateDeterministicKeyPairPerformance += Cipher.BitcoinAddressFromPubkey(res[0]);
-                            //this.generateDeterministicKeyPairPerformance += " ; " + JSON.stringify(Cipher.AddressFromSecKey(res[1]));
                         } catch(e) {
                             this.generateDeterministicKeyPairError = e.toString()
                         }
+                    },
+                    checkECDH: function() {
+                        var self = this;
+                        this.ECDHError = "";
+                        this.ECDHPerformance = "";
+                        axios.post('/ECDH', {
+                            seed: this.seed,
+                            pub: this.personAPublicKey,
+                            sec: this.personBPrivateKey
+                        })
+                        .then(function (response) {
+                            console.log(response);
+                            if (response.data.sharedSecret == self.personAECDH) {
+                                self.ECDHPerformance = "Shared secret is identical.";
+                            } else {
+                                self.ECDHError = "Shared secret isn't identical.";
+                            }                            
+                        })
+                        .catch(function (error) {
+                            self.ECDHError = error.toString();
+                        });
                     },
                     ECDH: function() {
                         try {
@@ -242,6 +305,37 @@
                         } catch(e) {
                             this.ECDHError = e.toString()
                         }
+                    },
+                    bitcoinAddressFromPubkey: function() {
+                        try {
+                            this.BitcoinAddressFromPubkeyError = "";
+                            this.BitcoinAddressFromPubkeyPerformance = "";
+                            var t0 = performance.now();
+                            this.bitcoinAddress = Cipher.BitcoinAddressFromPubkey(FromBase64(this.PubKey4BitcoinAddress));
+                            var t1 = performance.now();
+                            this.BitcoinAddressFromPubkeyPerformance = "Call to BitcoinAddressFromPubkey took " + ((t1 - t0)/2).toFixed(2) + " milliseconds.";
+                        } catch (e) {
+                            this.BitcoinAddressFromPubkeyError = e.toString();
+                        }
+                    },
+                    checkBitcoinAddressFromPubkey: function() {
+                        var self = this;
+                        this.BitcoinAddressFromPubkeyError = "";
+                        this.BitcoinAddressFromPubkeyPerformance = "";
+                        axios.post('/BitcoinAddressFromPubkey', {
+                            pub: this.PubKey4BitcoinAddress
+                        })
+                        .then(function (response) {
+                            console.log(response);
+                            if (response.data.address == self.bitcoinAddress) {
+                                self.BitcoinAddressFromPubkeyPerformance = "Bitcoin Address is identical.";
+                            } else {
+                                self.BitcoinAddressFromPubkeyError = "Bitcoin Address isn't identical.";
+                            }                            
+                        })
+                        .catch(function (error) {
+                            self.BitcoinAddressFromPubkeyError = error.toString();
+                        });
                     }
                 }
             })
