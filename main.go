@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"log"
 	"net/http"
 
@@ -20,7 +21,14 @@ type CipherData struct {
 	Address      string `json:"address,omitempty"`
 }
 
+var pubKey cipher.PubKey
+var secKey cipher.SecKey
+var seed []byte
+
 func main() {
+	seed = make([]byte, 23)
+	pubKey, secKey = cipher.GenerateDeterministicKeyPair(seed)
+
 	m := macaron.New()
 	m.Use(macaron.Logger())
 	m.Use(macaron.Recovery())
@@ -32,12 +40,27 @@ func main() {
 	m.Post("/GenerateDeterministicKeyPair", binding.Json(CipherData{}), PostGenerateDeterministicKeyPair)
 	m.Post("/ECDH", binding.Json(CipherData{}), PostECDH)
 	m.Post("/BitcoinAddressFromPubkey", binding.Json(CipherData{}), BitcoinAddressFromPubkey)
+	m.Post("/CheckSeedPubKeyAddress", binding.Json(CipherData{}), CheckSeedPubKeyAddress)
+	m.Get("/publicKey", getPublicKey)
+	// seed, pubkey and address
 
 	m.Use(macaron.Static("web"))
 	m.Use(macaron.Static("gopherjs"))
 
 	log.Println("Server is running...")
 	log.Println(http.ListenAndServe("127.0.0.1:4000", m))
+}
+
+func getPublicKey(ctx *macaron.Context) {
+	ctx.JSON(http.StatusOK, []byte(pubKey[:]))
+}
+
+func CheckSeedPubKeyAddress(ctx *macaron.Context, data CipherData) {
+	p, _ := cipher.GenerateDeterministicKeyPair(data.Seed)
+	PubKey := []byte(p[:])
+	Address := cipher.BitcoinAddressFromPubkey(p)
+	res := bytes.Equal(PubKey, data.PubKey) && Address == data.Address
+	ctx.JSON(http.StatusOK, res)
 }
 
 func PostGenerateDeterministicKeyPair(ctx *macaron.Context, data CipherData) {

@@ -9,6 +9,8 @@
             <div class="grid-960 container">
                 <div style="display:none;" v-show="isLoaded">
                     <h1>Test cipher</h1>
+                    <strong>Server public key <span class="label">{{serverPublicKey}}</span></strong>
+                    <div class="float-right">{{timeStr}}</div>
                     <form class="form-horizontal" v-on:submit.prevent>
                         <hr/>
                         <h2>Test GenerateDeterministicKeyPair</h2>
@@ -25,8 +27,7 @@
                             </div>
                         </div>
                         <div class="column col-xs-12">
-                            <button class="btn btn-primary input-group-btn" v-on:click="generateDeterministicKeyPair">GenerateDeterministicKeyPair</button>
-                            <button class="btn btn-warning input-group-btn" v-on:click="checkGenerateDeterministicKeyPair">Check GenerateDeterministicKeyPair on Go back-end</button>
+                            <button class="btn btn-primary input-group-btn" v-on:click="generateDeterministicKeyPair">GenerateDeterministicKeyPair and BitcoinAddress</button>
                         </div>
                         <div class="column col-xs-12" v-show="generateDeterministicKeyPairPerformance">
                             <div class="toast toast-success" >
@@ -39,7 +40,8 @@
                                 <button class="btn btn-clear float-right" v-on:click="generateDeterministicKeyPairError=''"></button>
                                 {{generateDeterministicKeyPairError}}
                             </div>
-                        </div>                        
+                        </div>    
+                    
                         <div class="column col-xs-12">                            
                         <div class="form-group">
                             <div class="col-2">
@@ -56,10 +58,40 @@
                             <div class="col-10">
                                 <input class="form-input" type="text" placeholder="Secret Key" v-model="privateKey">
                             </div>
-                        </div>                        
                         </div>
+                        <div class="form-group">
+                            <div class="col-2">
+                                <label class="form-label">Bitcoin Address</label>
+                            </div>
+                            <div class="col-10">
+                                <input class="form-input" type="text" placeholder="Bitcoin Address" v-model="bitcoinAddress">
+                            </div>
+                        </div>                                                 
+                        </div>
+                        <div class="column col-xs-12">
+                            <button class="btn btn-primary input-group-btn" v-on:click="checkGenerateDeterministicKeyPairAndBitcoinAddress">
+                                Check on the server
+                            </button>
+                            <span class="label label-success" v-show="checkGenerateDeterministicKeyPairAndBitcoinAddressResult === true">success</span>
+                            <span class="label label-error" v-show="checkGenerateDeterministicKeyPairAndBitcoinAddressResult === false">fail</span>
+                            <span class="label label-warning" v-show="checkGenerateDeterministicKeyPairAndBitcoinAddressResult && checkGenerateDeterministicKeyPairAndBitcoinAddressResult !== false && checkGenerateDeterministicKeyPairAndBitcoinAddressResult !== true">{{checkGenerateDeterministicKeyPairAndBitcoinAddressResult}}</span>
+                        </div>
+
+                        <div class="column col-xs-12">
+                            <button class="btn btn-primary input-group-btn badge" v-on:click="checkGenerateDeterministicKeyPairAndBitcoinAddressContinues" v-bind:data-badge="checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesCounter + ' (' + checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesTimer + ' sec)'">
+                                {{checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIsWorking && 'Stop' || 'Start' }} continues check on the server
+                            </button>
+                        </div>
+
+                        <div class="column col-xs-12" v-show="checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesFails.length">
+                            <div class="toast toast-error" >                                
+                                <p v-for="item in checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesFails">{{item}}</p>
+                            </div>
+                        </div>                         
+
                         <hr/>
                         <h2>Test ECDH</h2>
+                        <strong>Server public key <span class="label">{{serverPublicKey}}</span></strong>
                         <div class="column col-xs-12"> 
 
                         <label class="form-label">Parameters for <a href="https://github.com/skycoin/skycoin/blob/develop/src/cipher/crypto.go#L186"> ECDH</a></label>
@@ -138,43 +170,7 @@
                         </div>    
                     
                         <hr/>
-                        <h2>Test BitcoinAddressFromPubkey</h2>
-                        
-                        <div class="column">
-                            <div class="col-xs-3">
-                                <label class="form-label">Parameters for <a href="https://github.com/skycoin/skycoin/blob/develop/src/cipher/address.go#L189">BitcoinAddressFromPubkey</a></label>
-                            </div>
-                            <div class="col-xs-9">                            
-                                <div class="input-group">
-                                    <span class="input-group-addon addon">PubKey</span>
-                                    <input type="text" class="form-input input" placeholder="base64" v-model="PubKey4BitcoinAddress">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="column col-xs-12">
-                            <button class="btn btn-primary input-group-btn" v-on:click="bitcoinAddressFromPubkey">BitcoinAddressFromPubkey</button>
-                            <button class="btn btn-warning input-group-btn" v-on:click="checkBitcoinAddressFromPubkey">Check BitcoinAddressFromPubkey on Go back-end</button>
-                        </div>
-                        <div class="column col-xs-12" v-show="BitcoinAddressFromPubkeyPerformance">
-                            <div class="toast toast-success" >
-                                <button class="btn btn-clear float-right" v-on:click="BitcoinAddressFromPubkeyPerformance=''"></button>
-                                {{BitcoinAddressFromPubkeyPerformance}}
-                            </div>
-                        </div>
-                        <div class="column col-xs-12" v-show="BitcoinAddressFromPubkeyError">
-                            <div class="toast toast-error" >
-                                <button class="btn btn-clear float-right" v-on:click="BitcoinAddressFromPubkeyError=''"></button>
-                                {{BitcoinAddressFromPubkeyError}}
-                            </div>
-                        </div>  
-                        <div class="form-group">
-                            <div class="col-2">
-                                <label class="form-label"><strong>Bitcoin Address</strong></label>
-                            </div>
-                            <div class="col-10">
-                                <input class="form-input" type="text" placeholder="Bitcoin Address" v-model="bitcoinAddress">
-                            </div>
-                        </div>                                               
+                                                          
                     <!-- form structure -->
                     </form>                    
                 </div>
@@ -186,6 +182,7 @@
         
         <script src="http://wzrd.in/standalone/typedarray@latest"></script>
         <script src="https://unpkg.com/vue"></script>
+        <script src="/js/moment.js"></script>
         <script src="/main.js"></script>
         <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
@@ -205,10 +202,18 @@
             var app = new Vue({
                 el: '#app',
                 data: {
+                    serverPublicKey: "",
+                    checkGenerateDeterministicKeyPairAndBitcoinAddressResult: 0,
+                    checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIsWorking: false,
+                    checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesFails: [],
+                    checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesCounter: 0,
+                    checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIntervalId: 0,
+                    checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesTimer: 0,
                     message: 'Hello Vue!',
                     seed: "A1BvYKnDnaUBW0gps7XI9HPWWGgUvXLvyRpnIOWlnPtp",
                     publicKey: "",
                     privateKey: "",
+                    bitcoinAddress: "",
                     generateDeterministicKeyPairPerformance: "",
                     generateDeterministicKeyPairError: "",
                     isLoaded: true,
@@ -220,10 +225,7 @@
                     personBECDH: "",
                     ECDHPerformance: "",
                     ECDHError: "",
-                    PubKey4BitcoinAddress: "A4C1/B/RZcL3ADO2VeiO7LL3JNQwo4Z5FI7E7DcmKIaP",
-                    bitcoinAddress: "",
-                    BitcoinAddressFromPubkeyError: "",
-                    BitcoinAddressFromPubkeyPerformance: ""
+                    timeStr: ""
                 },
                 methods: {
                     generateSeed: function() {
@@ -231,25 +233,7 @@
                         seed = seed.map(getRandomInt255);
                         this.seed = ToBase64(seed); 
                     },
-                    checkGenerateDeterministicKeyPair: function() {
-                        var self = this;
-                        this.generateDeterministicKeyPairError = "";
-                        this.generateDeterministicKeyPairPerformance = "";
-                        axios.post('/GenerateDeterministicKeyPair', {
-                            seed: this.seed
-                        })
-                        .then(function (response) {
-                            console.log(response);
-                            if (response.data.pub == self.publicKey && response.data.sec == self.privateKey) {
-                                self.generateDeterministicKeyPairPerformance = "Keys are identical.";
-                            } else {
-                                self.generateDeterministicKeyPairError = "Keys aren't identical.";
-                            }                            
-                        })
-                        .catch(function (error) {
-                            self.generateDeterministicKeyPairError = error.toString();
-                        });
-                    },                    
+                  
                     generateDeterministicKeyPair: function() {
                         try {
                             this.generateDeterministicKeyPairError = "";
@@ -257,6 +241,7 @@
                             var seed = FromBase64(this.seed);
                             var t0 = performance.now();
                             var res = Cipher.GenerateDeterministicKeyPair(seed);
+                            this.bitcoinAddress = Cipher.BitcoinAddressFromPubkey(res[0]);
                             var t1 = performance.now();
                             this.publicKey = ToBase64(res[0]);
                             this.privateKey = ToBase64(res[1]);  
@@ -264,6 +249,64 @@
                         } catch(e) {
                             this.generateDeterministicKeyPairError = e.toString()
                         }
+                    },
+                    checkGenerateDeterministicKeyPairAndBitcoinAddress: function() {
+                        this.checkGenerateDeterministicKeyPairAndBitcoinAddressResult = 0;
+                        // CheckSeedPubKeyAddress
+                        axios.post('/CheckSeedPubKeyAddress', {
+                            seed: this.seed,
+                            pub: this.publicKey,
+                            address: this.bitcoinAddress
+                        })
+                        .then(function (response) {
+                            this.checkGenerateDeterministicKeyPairAndBitcoinAddressResult = response.data;
+                        }.bind(this))
+                        .catch(function (error) {
+                            this.checkGenerateDeterministicKeyPairAndBitcoinAddressResult = error.toString();
+                        }.bind(this));                        
+                    },
+                    checkGenerateDeterministicKeyPairAndBitcoinAddressContinues: function() {
+                        this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesFails = [];
+                        this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesCounter = 0;                        
+                        if (this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIsWorking) {
+                            this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIsWorking = false;
+                            //clearInterval(this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIntervalId);
+                        } else {
+                            this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesTimer = 0;
+                            this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIsWorking = true;
+                            var t0 = performance.now();
+                            var doCheck = function() { 
+                                if (!this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIsWorking) {
+                                    return;
+                                }
+                                var seed = new Uint8Array(32);
+                                seed = seed.map(getRandomInt255);                            
+                                var res = Cipher.GenerateDeterministicKeyPair(seed);
+                                var pubKey = res[0];
+                                var bitcoinAddress = Cipher.BitcoinAddressFromPubkey(pubKey);
+                                var t1 = performance.now();
+                                this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesTimer = ((t1 - t0)/1000.0).toFixed(0);
+                                this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesCounter++;
+                                var counter = this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesCounter;
+                                var timer = this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesTimer;
+                                return axios.post('/CheckSeedPubKeyAddress', {
+                                    seed: ToBase64(seed),
+                                    pub: ToBase64(pubKey),
+                                    address: bitcoinAddress
+                                })
+                                .then(function (response) {
+                                    if (response.data === false) {
+                                        this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesFails.push("fail " + 
+                                        counter + " (" + timer + ' sec)');
+                                    }
+                                }.bind(this))
+                                .catch(function (error) {
+                                    this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesFails.push(error.toString());
+                                })
+                            }.bind(this);
+                            setTimeout(doCheck, 100);
+                            this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIntervalId = setInterval(doCheck, 4500);   
+                        }                 
                     },
                     checkECDH: function() {
                         var self = this;
@@ -306,39 +349,19 @@
                             this.ECDHError = e.toString()
                         }
                     },
-                    bitcoinAddressFromPubkey: function() {
-                        try {
-                            this.BitcoinAddressFromPubkeyError = "";
-                            this.BitcoinAddressFromPubkeyPerformance = "";
-                            var t0 = performance.now();
-                            this.bitcoinAddress = Cipher.BitcoinAddressFromPubkey(FromBase64(this.PubKey4BitcoinAddress));
-                            var t1 = performance.now();
-                            this.BitcoinAddressFromPubkeyPerformance = "Call to BitcoinAddressFromPubkey took " + ((t1 - t0)/2).toFixed(2) + " milliseconds.";
-                        } catch (e) {
-                            this.BitcoinAddressFromPubkeyError = e.toString();
-                        }
-                    },
-                    checkBitcoinAddressFromPubkey: function() {
-                        var self = this;
-                        this.BitcoinAddressFromPubkeyError = "";
-                        this.BitcoinAddressFromPubkeyPerformance = "";
-                        axios.post('/BitcoinAddressFromPubkey', {
-                            pub: this.PubKey4BitcoinAddress
-                        })
+                    initApp: function() {
+                        setInterval(function(){ 
+                            this.timeStr = moment().format("hh:mm:ss a");
+                        }.bind(this), 800);
+
+                        axios.get('/publicKey')
                         .then(function (response) {
-                            console.log(response);
-                            if (response.data.address == self.bitcoinAddress) {
-                                self.BitcoinAddressFromPubkeyPerformance = "Bitcoin Address is identical.";
-                            } else {
-                                self.BitcoinAddressFromPubkeyError = "Bitcoin Address isn't identical.";
-                            }                            
-                        })
-                        .catch(function (error) {
-                            self.BitcoinAddressFromPubkeyError = error.toString();
-                        });
+                            this.serverPublicKey = response.data;                            
+                        }.bind(this));
                     }
                 }
             })
+            app.initApp();
         </script>
     </body>
 </html>
