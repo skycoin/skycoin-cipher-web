@@ -9,7 +9,7 @@
             <div class="grid-960 container">
                 <div style="display:none;" v-show="isLoaded">
                     <h1>Test cipher</h1>
-                    <strong>Server public key <span class="label">{{serverPublicKey}}</span></strong>
+                    <strong>Server Public key <span class="label">{{serverPublicKey}}</span></strong>
                     <div class="float-right">{{timeStr}}</div>
                     <form class="form-horizontal" v-on:submit.prevent>
                         <hr/>
@@ -91,13 +91,14 @@
 
                         <hr/>
                         <h2>Test ECDH</h2>
-                        <strong>Server public key <span class="label">{{serverPublicKey}}</span></strong>
+                        <!-- 2. you hit a button and the client generates a new public key/private key
+3. the client takes its private key and computers ECDH with the servers public key. The client send the pubkey it generated to the server.
+4. The server computes ECDH of its SECKEY and the PUBKEY the client sent it.
+5. The client gets this value and computes the ECDH of its SECKEY and the pubkey of the server
+6. display both the locally computed EDCH value as hex, and the value returned (they should be equal)
+-->
+                        <strong>Server Public key <span class="label">{{serverPublicKey}}</span></strong>
                         <div class="column col-xs-12"> 
-
-                        <label class="form-label">Parameters for <a href="https://github.com/skycoin/skycoin/blob/develop/src/cipher/crypto.go#L186"> ECDH</a></label>
-                        <p>
-                            ECDH generates a shared secret A: pub1,sec1 B: pub2,sec2 person A sends their public key pub1 person B sends an emphameral pubkey pub2 person A computes cipher.ECDH(pub2, sec1) person B computes cipher.ECDH(pub1, sec2) cipher.ECDH(pub2, sec1) equals cipher.ECDH(pub1, sec2) This is their shared secret
-                        </p>
 
                         <div class="column col-xs-12" v-show="ECDHPerformance">
                             <div class="toast toast-success" >
@@ -114,57 +115,42 @@
 
                         <div class="form-group">
                             <div class="col-2">
-                                <label class="form-label"><strong>Person A</strong> Public Key</label>
+                                <label class="form-label"><strong>Client</strong> Public Key</label>
                             </div>
                             <div class="col-10">
-                                <input class="form-input" type="text"  placeholder="Person A Public Key" v-model="personAPublicKey">
+                                <div class="input-group">
+                                    <input class="form-input" type="text"  placeholder="Person A Public Key" v-model="clientPublicKey">
+                                    <button class="btn btn-primary input-group-btn btn" v-on:click="generatePubSec">Generate</button>
+                                </div>
                             </div>
                         </div>
                         <div class="form-group">
                             <div class="col-2">
-                                <label class="form-label"><strong>Person A</strong> Secret Key</label>
+                                <label class="form-label"><strong>Client</strong> Secret Key</label>
                             </div>
                             <div class="col-10">
-                                <input class="form-input" type="text" placeholder="Person A Secret Key" v-model="personAPrivateKey">
+                                <input class="form-input" type="text" placeholder="Person A Secret Key" v-model="clientPrivateKey">
                             </div>
-                        </div>    
+                        </div>            
                         
                         <div class="form-group">
                             <div class="col-2">
-                                <label class="form-label"><strong>Person B</strong> Public Key</label>
+                                <label class="form-label"><strong>Client</strong> ECDH</label>
                             </div>
                             <div class="col-10">
-                                <input class="form-input" type="text"  placeholder="Person B Public Key" v-model="personBPublicKey">
+                                <input class="form-input" type="text"  placeholder="Client ECDH" v-model="clientECDH">
                             </div>
                         </div>
                         <div class="form-group">
                             <div class="col-2">
-                                <label class="form-label"><strong>Person B</strong> Secret Key</label>
+                                <label class="form-label"><strong>Server</strong> ECDH</label>
                             </div>
                             <div class="col-10">
-                                <input class="form-input" type="text" placeholder="Person B Secret Key" v-model="personBPrivateKey">
-                            </div>
-                        </div>          
-                        
-                        <div class="form-group">
-                            <div class="col-2">
-                                <label class="form-label"><strong>Person A</strong> ECDH</label>
-                            </div>
-                            <div class="col-10">
-                                <input class="form-input" type="text"  placeholder="Person A ECDH" v-model="personAECDH">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="col-2">
-                                <label class="form-label"><strong>Person B</strong> ECDH</label>
-                            </div>
-                            <div class="col-10">
-                                <input class="form-input" type="text" placeholder="Person B ECDH" v-model="personBECDH">
+                                <input class="form-input" type="text" placeholder="Server ECDH" v-model="serverECDH">
                             </div>
                         </div> 
                         <div class="column col-xs-12">
-                            <button class="btn btn-primary input-group-btn" v-on:click="ECDH">ECDH</button>
-                            <button class="btn btn-warning input-group-btn" v-on:click="checkECDH">Check ECDH on Go back-end</button>
+                            <button class="btn btn-primary input-group-btn" v-on:click="ECDH">Test ECDH</button>
                         </div>
 
                         </div>    
@@ -217,12 +203,10 @@
                     generateDeterministicKeyPairPerformance: "",
                     generateDeterministicKeyPairError: "",
                     isLoaded: true,
-                    personAPublicKey: "A9rTePRfYAnIPkYl7Mbhbnaq6SruFh63QZdyQHppJlYt",
-                    personAPrivateKey: "VKJktzeRSTjIDk7IMqylkUWgi5tpo3YuT/uNUdGq5pY=",
-                    personBPublicKey: "A3dlngD/Tj/CetziwjmmG18UiS26Pi1KQZKhvr79hm5a",
-                    personBPrivateKey: "3h875e3zrQ2pUVQyu5EdOqwjjajEY93CR+oRHHEAZM8=",
-                    personAECDH: "",
-                    personBECDH: "",
+                    clientPublicKey: "A9rTePRfYAnIPkYl7Mbhbnaq6SruFh63QZdyQHppJlYt",
+                    clientPrivateKey: "VKJktzeRSTjIDk7IMqylkUWgi5tpo3YuT/uNUdGq5pY=",
+                    clientECDH: "",
+                    serverECDH: "",
                     ECDHPerformance: "",
                     ECDHError: "",
                     timeStr: ""
@@ -270,7 +254,7 @@
                         this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesCounter = 0;                        
                         if (this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIsWorking) {
                             this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIsWorking = false;
-                            //clearInterval(this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIntervalId);
+                            clearInterval(this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIntervalId);
                         } else {
                             this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesTimer = 0;
                             this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIsWorking = true;
@@ -308,52 +292,49 @@
                             this.checkGenerateDeterministicKeyPairAndBitcoinAddressContinuesIntervalId = setInterval(doCheck, 4500);   
                         }                 
                     },
-                    checkECDH: function() {
-                        var self = this;
-                        this.ECDHError = "";
-                        this.ECDHPerformance = "";
-                        axios.post('/ECDH', {
-                            seed: this.seed,
-                            pub: this.personAPublicKey,
-                            sec: this.personBPrivateKey
-                        })
-                        .then(function (response) {
-                            console.log(response);
-                            if (response.data.sharedSecret == self.personAECDH) {
-                                self.ECDHPerformance = "Shared secret is identical.";
-                            } else {
-                                self.ECDHError = "Shared secret isn't identical.";
-                            }                            
-                        })
-                        .catch(function (error) {
-                            self.ECDHError = error.toString();
-                        });
+                    generatePubSec: function() {
+                        var seed = new Uint8Array(32);
+                        seed = seed.map(getRandomInt255);                            
+                        var res = Cipher.GenerateDeterministicKeyPair(seed);
+                        this.clientPublicKey =  ToBase64(res[0]);
+                        this.clientPrivateKey = ToBase64(res[1]);
                     },
                     ECDH: function() {
                         try {
                             this.ECDHError = "";
                             this.ECDHPerformance = "";
-                            var pubA = FromBase64(this.personAPublicKey);
-                            var secA = FromBase64(this.personAPrivateKey);
-                            var pubB = FromBase64(this.personBPublicKey);
-                            var secB = FromBase64(this.personBPrivateKey);
+                            var sPub = FromBase64(this.serverPublicKey);
+                            var cSec = FromBase64(this.clientPrivateKey);
                             
                             var t0 = performance.now();                            
-                            var res1 = Cipher.ECDH(pubB, secA);
-                            var res2 = Cipher.ECDH(pubA, secB);
+                            var res1 = Cipher.ECDH(sPub, cSec);
                             var t1 = performance.now();
-                            this.personAECDH = ToBase64(res1);  
-                            this.personBECDH = ToBase64(res2);  
-                            this.ECDHPerformance = "Call to ECDH took " + ((t1 - t0)/2).toFixed(2) + " milliseconds.";
+                            this.clientECDH = ToBase64(res1);  
+                            //this.ECDHPerformance = "Call to ECDH took " + ((t1 - t0)/2).toFixed(2) + " milliseconds.";
+                            axios.post('/ECDH', {
+                                pub: this.clientPublicKey,
+                            })
+                            .then(function (response) {
+                                this.serverECDH = response.data.sharedSecret;
+                                if (response.data.sharedSecret == this.clientECDH) {
+                                    this.ECDHPerformance = "Shared secret is identical.";
+                                } else {
+                                    this.ECDHError = "Shared secret isn't identical.";
+                                }                            
+                            }.bind(this))
+                            .catch(function (error) {
+                                this.ECDHError = error.toString();
+                            }.bind(this));
                         } catch(e) {
                             this.ECDHError = e.toString()
                         }
                     },
                     initApp: function() {
+                        /*
                         setInterval(function(){ 
                             this.timeStr = moment().format("hh:mm:ss a");
                         }.bind(this), 800);
-
+                        */
                         axios.get('/publicKey')
                         .then(function (response) {
                             this.serverPublicKey = response.data;                            

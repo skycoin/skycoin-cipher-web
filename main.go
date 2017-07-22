@@ -82,14 +82,10 @@ func GenerateDeterministicKeyPair(ctx *macaron.Context) {
 
 func PostECDH(ctx *macaron.Context, data CipherData) {
 	p := cipher.PubKey{}
-	s := cipher.SecKey{}
 	for i, v := range data.PubKey {
 		p[i] = v
 	}
-	for i, v := range data.SecKey {
-		s[i] = v
-	}
-	data.SharedSecret = cipher.ECDH(p, s)
+	data.SharedSecret = cipher.ECDH(p, secKey)
 	ctx.JSON(http.StatusOK, data)
 }
 
